@@ -121,7 +121,7 @@ class VkScraper(Scraper):
             os.mkdir(save_path)
             logger.debug(f'{self.resource_name} - Created folder for {name} community')
         news_set: Set[str] = set(os.listdir(save_path))
-        data: dict = self.vk_session.method('wall.get', {'domain': name})
+        data: dict = self.vk_session.method('wall.get', {'domain': name, 'count': 100})
         new_news: int = 0
         for item in data['items']:
             if str(item['id']) not in news_set:
@@ -181,7 +181,7 @@ class TelegramScraper(Scraper):
         else:
             raise ScraperException('You should call `initialize_channel` with giving any post from it to this method.')
 
-        logger.debug(f'Id of of the latest saved post is {id_}')
+        logger.debug(f'{self.resource_name} - Id of of the latest saved post is {id_}')
         n_new_post = 0
 
         while True:
@@ -197,7 +197,7 @@ class TelegramScraper(Scraper):
             id_ += 1
             n_new_post += 1
 
-        logger.debug(f'There are {n_new_post} new posts in {name}')
+        logger.debug(f'{self.resource_name} - There are {n_new_post} new posts in {name}')
 
     def initialize_channel(self, url: str) -> None:
         """
@@ -209,8 +209,3 @@ class TelegramScraper(Scraper):
         if data:
             self.save_post(data, community_name, post_id)
             self.add_community_to_resources(community_name)
-
-if __name__ == '__main__':
-    from config import *
-    scraper = VkScraper(EMAIL, PASSWORD)
-    scraper.scrap_data()
