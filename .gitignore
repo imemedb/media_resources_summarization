@@ -106,6 +106,7 @@ venv.bak/
 # production
 config.py
 vk_config.v2.json
+vk_data
 
 # MacOS
 .DS_Store
