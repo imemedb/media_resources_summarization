@@ -25,17 +25,30 @@ logger.addHandler(sh)
 
 class VkScraper:
 
-    def __init__(self, email: str, password: str, save_path: Optional[str]=None) -> None:
+    def __init__(self, email: str, password: str, save_path: str='vk_data/') -> None:
+        """
+        Initialize vk scraper
+
+        :param email: Your email or phone to vk
+        :param password: Your password to vk
+        :param save_path: Where to store data.
+                          By default will save in the folder where program was started.
+        """
         self.vk_session = vk_api.vk_api.VkApi(email, password)
         self.vk_session.auth(token_only=True)
         self.vk = self.vk_session.get_api()
         logger.debug('Connected to vk API')
 
-        self.save_path: str = save_path or 'vk_data/'
+        self.save_path: str = save_path
         if not os.path.exists(self.save_path):
             os.mkdir(self.save_path)
 
     def process_community(self, name: str) -> None:
+        """
+        Save data from one community
+
+        :param name: so called "domain" name of community
+        """
         save_path: str = os.path.join(self.save_path, name)
         if not os.path.exists(save_path):
             os.mkdir(save_path)
@@ -53,6 +66,11 @@ class VkScraper:
         logger.debug(f'{name} has {new_news} new posts')
 
     def scrap_data(self) -> None:
+        """
+        Scraps data from communities in `resources.json`
+
+        :return:
+        """
         with open('resources.json', 'r') as f:
             communities: List[str] = json.load(f)['vk']['communities']
 
