@@ -1,15 +1,20 @@
 {
-  "vk":{
-    "communities":[
-      "vktopten",
-      "ifun",
-      "oroom",
-      "lhack",
-      "mudakoff",
-      "smeyaka",
-      "ne.poverish",
-      "fucking_humor",
-      "black_humor"
-    ]
-  }
+    "vk": {
+        "communities": [
+            "vktopten",
+            "ifun",
+            "oroom",
+            "lhack",
+            "mudakoff",
+            "smeyaka",
+            "ne.poverish",
+            "fucking_humor",
+            "black_humor"
+        ]
+    },
+    "telegram": {
+        "communities": [
+            "popyachsa"
+        ]
+    }
 }
