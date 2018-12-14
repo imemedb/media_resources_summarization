@@ -1,11 +1,14 @@
 import json
 import os
-from collections import defaultdict
-from typing import List, Dict, Any, Iterator, Tuple
+from collections import defaultdict, Counter
+from typing import List, Dict, Any, Iterator, Tuple, Iterable
 import logging
 
+import gensim
 import pandas as pd
-
+import numpy as np
+from gensim import corpora
+from gensim.models import LdaModel
 
 logger = logging.getLogger('database')
 logger.setLevel(logging.DEBUG)
@@ -19,7 +22,6 @@ fh.setFormatter(formatter)
 sh = logging.StreamHandler()
 sh.setLevel(logging.ERROR)
 sh.setFormatter(formatter)
-
 
 logger.addHandler(fh)
 logger.addHandler(sh)
@@ -88,7 +90,7 @@ class Database:
     def get_posts_reposts(self, group_name: str):
         raise NotImplementedError
 
-    def get_attachments(self, post):
+    def get_attachments(self, post) -> List[Tuple[str, str]]:
         attachs = []
         try:
             url = ''
@@ -107,8 +109,8 @@ class Database:
             logger.debug(f'Post {post["id"]} does not have attachments.')
         return attachs
 
-    def get_attachments_per_post(self, group_name: str) -> Dict[str, List[str]]:
-        attachments: Dict[str, List[str]] = defaultdict(dict)
+    def get_attachments_per_post(self, group_name: str) -> Dict[str, List[Tuple[str, str]]]:
+        attachments: Dict[str, List[Tuple[str, str]]] = defaultdict(dict)
         for batch in self.iter_all_posts(group_name):
             for item in batch['items']:
                 if item['id'] not in attachments:
@@ -126,3 +128,52 @@ class Database:
                     if text:
                         texts[item['id']] = text
         return texts
+
+    @staticmethod
+    def get_tokens_per_post(texts: Dict[str, str], tokenizer=None) -> Dict[str, List[str]]:
+        token_dict = dict()
+        for k, t in texts.items():
+            token_dict[k] = t.split() if not tokenizer else tokenizer(t)
+
+        return token_dict
+
+    @staticmethod
+    def count_tokens(tokens: Dict[str, List[str]]) -> Dict[str, int]:
+        return {k: len(v) for k, v in tokens.items()}
+
+    @staticmethod
+    def summary(data: Iterable):
+        return {
+            'mean': np.mean(data),
+            'var': np.var(data),
+            'max': np.max(data),
+            'min': np.min(data),
+            'sum': np.sum(data)
+        }
+
+    def count_media(self, group_name: str, plot=True):
+        texts = self.get_texts_per_post(group_name)
+        word_counts = self.count_tokens(self.get_tokens_per_post(texts))
+        word_stats = self.summary([v for v in word_counts.values()])
+        sentence_counts = self.count_tokens(self.get_tokens_per_post(texts, tokenizer=lambda t: t.split('.')))
+        sentence_stats = self.summary([v for v in sentence_counts.values()])
+
+        attachments = self.get_attachments_per_post(group_name)
+        attachments_counts = Counter([t[0] for v in attachments.values() for t in v])
+
+        return {
+            'word_stats': word_stats,
+            'sentence_stats': sentence_stats,
+            'attachments': attachments_counts
+        }
+
+    def build_language_model(self, group_name, tokenizer=None) -> LdaModel:
+        # TODO: add check for existing language model and load it if it's not too old
+        texts = self.get_texts_per_post(group_name)
+        tokens = self.get_tokens_per_post(texts, tokenizer)
+        dictionary = corpora.Dictionary([t for t in tokens.values()])
+        corpus = [dictionary.doc2bow(t) for t in tokens.values()]
+        lda: LdaModel = LdaModel(corpus=corpus, id2word=dictionary, num_topics=5, update_every=1, chunksize=10000,
+                                 passes=1)
+
+        return lda
