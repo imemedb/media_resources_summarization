@@ -26,9 +26,12 @@
     2. Number of sentences/words/characters.
 4. []: Определение трендовых материалов в ресурсе
     - []: Популярные картнки
+        - Для начала реализовать [статью](literature/images/sharma2015.pdf) 
     - []: Топики
         - Named entity recognition
         - Extract hashtags
+        - Text summarization
+        - Language detection
 5. []: Вычление популярного контента между группами и поиск оригинального контента.
 6. []: Save scraped data to mongodb
 7. []: Preprocessors for words
