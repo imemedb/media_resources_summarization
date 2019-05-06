@@ -21,3 +21,5 @@ traitlets==4.3.2
 urllib3==1.24.1
 vk-api==11.3.0
 wcwidth==0.1.7
+sklearn
+gensim
