@@ -23,3 +23,5 @@ vk-api==11.3.0
 wcwidth==0.1.7
 sklearn
 gensim
+jupyter
+nltk
