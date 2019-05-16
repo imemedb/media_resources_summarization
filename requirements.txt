@@ -25,3 +25,4 @@ sklearn
 gensim
 jupyter
 nltk
+pymongo
