@@ -79,11 +79,11 @@ class MediaCounter:
     @staticmethod
     def summary(data: Iterable):
         return {
-            "mean": np.mean(data),
-            "var": np.var(data),
-            "max": np.max(data),
-            "min": np.min(data),
-            "sum": np.sum(data),
+            "mean": float(np.mean(data)),
+            "var": float(np.var(data)),
+            "max": float(np.max(data)),
+            "min": float(np.min(data)),
+            "sum": float(np.sum(data)),
         }
 
     def count(self, group_name: str):
