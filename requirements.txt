@@ -4,3 +4,4 @@ vk-api==11.3.0
 pymongo
 numpy
 lxml
+flask

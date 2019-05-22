@@ -1,10 +1,8 @@
 import json
 import logging
 import os
-from collections import defaultdict, Counter
-from typing import List, Dict, Any, Iterator, Tuple, Iterable, Union
+from typing import List, Dict, Any, Iterator, Union
 
-import numpy as np
 from pymongo import MongoClient
 
 logger = logging.getLogger("database")
@@ -72,99 +70,8 @@ class Database:
 
         for pp in os.listdir(path):
             with open(os.path.join(path, pp, "info.json"), "r") as f:
-                yield json.load(f)
-
-    @staticmethod
-    def __get_biggest_image(list_sizes: List[Dict[Any, Any]]) -> str:
-        bigest_size = 0
-        url = ""
-        for sz in list_sizes:
-            if sz["width"] + sz["height"] > bigest_size:
-                url = sz["url"]
-
-        return url
-
-    def get_posts_reposts(self, group_name: str):
-        raise NotImplementedError
-
-    def get_attachments(self, post) -> List[Tuple[str, str]]:
-        attachs = []
-        try:
-            url = ""
-            for a in post["attachments"]:
-
-                if a["type"] == "photo":
-                    url = self.__get_biggest_image(a["photo"]["sizes"])
-                elif a["type"] == "link":
-                    url = a["link"]["url"]
-
-                if not url:
-                    logger.debug(f'Unknown type of attachment {a["type"]}')
-
-                attachs.append((a["type"], url))
-        except KeyError as e:
-            logger.debug(f'Post {post["id"]} does not have attachments.')
-        return attachs
-
-    def get_attachments_per_post(self, group_name: str) -> Dict[str, List[Tuple[str, str]]]:
-        attachments: Dict[str, List[Tuple[str, str]]] = defaultdict(dict)
-        for batch in self.iter_all_posts(group_name):
-            for item in batch["items"]:
-                if item["id"] not in attachments:
-                    attachs = self.get_attachments(item)
-                    if attachs:
-                        attachments[item["id"]] = attachs
-        return attachments
-
-    def get_texts_per_post(self, group_name: str) -> Dict[str, str]:
-        texts: Dict[str, str] = dict()
-        for batch in self.iter_all_posts(group_name):
-            for item in batch["items"]:
-                if item["id"] not in texts:
-                    text = item["text"]
-                    if text:
-                        texts[item["id"]] = text
-        return texts
-
-    @staticmethod
-    def get_tokens_per_post(texts: Dict[str, str], tokenizer=None) -> Dict[str, List[str]]:
-        token_dict = dict()
-        for k, t in texts.items():
-            token_dict[k] = t.split() if not tokenizer else tokenizer(t)
-
-        return token_dict
-
-    @staticmethod
-    def count_tokens(tokens: Dict[str, List[str]]) -> Dict[str, int]:
-        return {k: len(v) for k, v in tokens.items()}
-
-    @staticmethod
-    def summary(data: Iterable):
-        return {
-            "mean": np.mean(data),
-            "var": np.var(data),
-            "max": np.max(data),
-            "min": np.min(data),
-            "sum": np.sum(data),
-        }
-
-    def count_media(self, group_name: str):
-        texts = self.get_texts_per_post(group_name)
-        word_counts = self.count_tokens(self.get_tokens_per_post(texts))
-        word_stats = self.summary([v for v in word_counts.values()])
-        sentence_counts = self.count_tokens(
-            self.get_tokens_per_post(texts, tokenizer=lambda t: t.split("."))
-        )
-        sentence_stats = self.summary([v for v in sentence_counts.values()])
-
-        attachments = self.get_attachments_per_post(group_name)
-        attachments_counts = Counter([t[0] for v in attachments.values() for t in v])
-
-        return {
-            "word_stats": word_stats,
-            "sentence_stats": sentence_stats,
-            "attachments": attachments_counts,
-        }
+                for post in json.load(f)["items"]:
+                    yield post
 
     def save_data(self, data: Union[List[dict], dict]):
         """
@@ -211,7 +118,6 @@ class MongoDatabase(Database):
     def save_data(self, data: Union[List[dict], dict]):
         if isinstance(data, dict):
             id_doc: str = data["_id"]
-            # id_doc: ObjectId = ObjectId(id_doc)
             existing_doc = self.collection.find_one({"_id": id_doc})
             if existing_doc is None:
                 self.collection.insert_one(data)
@@ -227,7 +133,7 @@ class MongoDatabase(Database):
 
     @property
     def group_names(self) -> List[str]:
-        return [o["group_name"] for o in self.collection.find({}, {"group_name": 1})]
+        return list({o["group_name"] for o in self.collection.find({}, {"group_name": 1})})
 
     def count_posts(self, group_name=None) -> Dict[str, int]:
         counts = dict()
